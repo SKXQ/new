@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Recreon</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+  #output {
+    width: 80%;
+    margin: 20px auto;
+    padding: 10px;
+    border: 1px solid #ccc;
+    min-height: 100px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    outline: none;
+    resize: vertical;
+    background-color: #f5f5f5;
+  }
+  #recordButton {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 10px;
+    font-family: Arial, Helvetica;
+    background-color: #F01B22;
+    color: white;
+    cursor: pointer;
+  }
+  #recordButton:hover {
+    background-color: #A81815;
+  }
+
+#selectInput,
+#correctionInput {
+  margin: 10px;
+  padding: 10px;
+  width: 200px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+#selectInput::placeholder,
+#correctionInput::placeholder {
+  color: #999;
+}
+
+  .actionButton {
+    margin: 5px;
+    padding: 8px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    font-family: Arial, Helvetica;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+  }
+  .actionButton:hover {
+    background-color: #0056b3;
+  }
+  .actionButton.mobileShareButton {
+    background-color: #007BFF;
+  }
+  .actionButton.mobileShareButton:hover {
+    background-color: #0056b3;
+  }
+
+header {
+padding: 34px;
+background-color: #282828;
+
+}
+
+footer {
+padding: 40px;
+background-color: #282828;
+
+}
+
+
+p {
+font-family: Helvetica, Times New Roman;
+color: white;
+
+}
+
+</style>
+</head>
+<body>
+<header>
+<h1><img src="title.png"></h1>
+</header>
+
+<br>
+<br>
+
+<button id="recordButton">Start Recording</button>
+<div id="output" contenteditable="true"></div>
+<button class="actionButton" id="copyButton">Copy</button>
+<button class="actionButton" id="clearButton">Clear</button>
+<button class="actionButton mobileShareButton" id="mobileShareButton">Share</button>
+<br>
+<br>
+<br>
+<input type="text" id="selectInput" placeholder="Enter words">
+<input type="text" id="correctionInput" placeholder="Enter correction">
+<br>
+<button class="actionButton" id="selectButton">Correct</button>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+
+<footer>
+<center>
+
+<p>Tips:</p>
+<p>Saying 'stop' stops the recording and copies what you said to the clipboard.</p>
+<p>Minimize the page and put it beside a site that requires typing.</p>
+<p>You can edit text, but only after you stop recording.</p>
+
+<br>
+
+<p>2023 &copy; Recreon</p>
+</center>
+</footer>
+
+<script>
+const recordButton = document.getElementById('recordButton');
+const selectInput = document.getElementById('selectInput');
+const correctionInput = document.getElementById('correctionInput');
+const selectButton = document.getElementById('selectButton');
+const outputDiv = document.getElementById('output');
+const copyButton = document.getElementById('copyButton');
+const clearButton = document.getElementById('clearButton');
+const mobileShareButton = document.getElementById('mobileShareButton');
+
+let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.msSpeechRecognition)();
+recognition.continuous = true;
+recognition.interimResults = true;
+
+recordButton.addEventListener('click', () => {
+  if (recordButton.textContent === 'Start Recording') {
+    recognition.start();
+    recordButton.textContent = 'Stop Recording';
+  } else {
+    recognition.stop();
+    recordButton.textContent = 'Start Recording';
+  }
+});
+
+selectButton.addEventListener('click', () => {
+  const selectWord = selectInput.value.trim();
+  const correctionWord = correctionInput.value.trim();
+  if (selectWord !== '' && correctionWord !== '') {
+    const text = outputDiv.textContent;
+    const newText = text.replace(new RegExp(`\\b${selectWord}\\b`, 'gi'), correctionWord);
+    outputDiv.textContent = newText;
+
+    selectInput.value = '';
+    correctionInput.value = '';
+  }
+});
+
+copyButton.addEventListener('click', () => {
+  const textToCopy = outputDiv.textContent;
+  if (textToCopy.trim() !== '') {
+    navigator.clipboard.writeText(textToCopy)
+  }
+});
+
+clearButton.addEventListener('click', () => {
+  outputDiv.textContent = '';
+});
+
+mobileShareButton.addEventListener('click', () => {
+  if (navigator.share) {
+    navigator.share({
+      text: outputDiv.textContent,
+    })
+      .then(() => console.log('Shared successfully'))
+      .catch((error) => console.error('Error sharing:', error));
+  }
+});
+
+recognition.onresult = (event) => {
+  let transcription = '';
+  for (let i = 0; i < event.results.length; i++) {
+    transcription += event.results[i][0].transcript;
+  }
+  outputDiv.textContent = transcription;
+
+  if (transcription.toLowerCase().includes('stop')) {
+    recognition.stop();
+    recordButton.textContent = 'Start Recording';
+    const textToCopy = transcription.trim();
+    if (textToCopy !== '') {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        console.log('Text copied to clipboard:', textToCopy);
+      }).catch((error) => {
+        console.error('Error copying text to clipboard:', error);
+      });
+    }
+  }
+};
+
+</script>
+</body>
+</html>
